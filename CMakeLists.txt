@@ -1,0 +1,6 @@
+cmake_minimum_required(VERSION 2.8)
+project(common_multichannelpowersupply)
+find_package(Boost MODULE REQUIRED REQUIRED COMPONENTS program_options system)
+FILE(GLOB core_src core/*.h)
+INSTALL(FILES ${core_src} DESTINATION include/common/MultiChannelPowerSupply/core)
+add_subdirectory(models)
