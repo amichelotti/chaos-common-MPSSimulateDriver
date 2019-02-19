@@ -1,2 +1,0 @@
-/usr/bin/ar qc ../../../../build-x86_64-Linux/libcommon_multichannelpowersupply_MultiPSSim.a  CMakeFiles/common_multichannelpowersupply_MultiPSSim.dir/MultiPSSim.cpp.o
-/usr/bin/ranlib ../../../../build-x86_64-Linux/libcommon_multichannelpowersupply_MultiPSSim.a

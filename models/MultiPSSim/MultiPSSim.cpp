@@ -80,6 +80,8 @@ MultiPSSim::MultiPSSim(const chaos::common::data::CDataWrapper &config) {
 		   nuovo.IMon= (float) ch/4;
 		   nuovo.VMon=(float) ch/4;
 		   this->canali.push_back(nuovo);
+			 this->voltageGenerator=true;
+			 this->AdditiveNoise=0;
 	   }
    }
     //DPRINT("received init parameter %s ",config.getJSONString().c_str());
@@ -97,8 +99,17 @@ MultiPSSim::MultiPSSim(const chaos::common::data::CDataWrapper &config) {
 				std::string trimmedStr=trim_copy(parola);
 
 				this->toShow.push_back(trimmedStr);
-				
 			} while (next != string::npos);
+		}
+		GET_PARAMETER(device_param, Behaviour, int32_t, 0);
+		if (Behaviour == ::common::multichannelpowersupply::MPS_CURRENT_GENERATOR)
+		{
+			this->voltageGenerator=false;
+		}
+		GET_PARAMETER(device_param, Noise, double, 0);
+		if (Noise > 0)
+		{
+			this->AdditiveNoise=Noise;
 		}
 	}
 }
@@ -106,7 +117,8 @@ MultiPSSim::MultiPSSim(const chaos::common::data::CDataWrapper &config) {
 MultiPSSim::~MultiPSSim() {
 }
 int MultiPSSim::UpdateHV(std::string& crateData) {
-	//this->canali.clear();
+	char converted[32];
+	std::string toPrint;
 	crateData.clear();
 	crateData="[";
 	int prog=0;
@@ -128,17 +140,24 @@ int MultiPSSim::UpdateHV(std::string& crateData) {
 				crateData+= "\"IMon\":0,";
 			}
 			else if (CHECKMASK(this->canali[prog].status,common::powersupply::POWER_SUPPLY_STATE_ON))
-			{
-				crateData+= "\"VMon\":"+std::to_string(this->canali[prog].VMon) +",";
-				crateData+= "\"IMon\":"+std::to_string(this->canali[prog].IMon) +",";
+			{// rand : RAND_MAX = noiseLevel : AdditiveNoise
+				
+			  double noiseLevel= (this->AdditiveNoise*std::rand())/ RAND_MAX;
+				snprintf(converted,32,"%6.3f",this->canali[prog].VMon + noiseLevel);toPrint=std::string(converted);
+				crateData+= "\"VMon\":"+toPrint +",";
+				noiseLevel= (this->AdditiveNoise*std::rand())/ RAND_MAX;
+				snprintf(converted,32,"%6.3f",this->canali[prog].IMon + noiseLevel);toPrint=std::string(converted);
+				crateData+= "\"IMon\":"+toPrint +",";
 			}
-			crateData+= "\"status\":"+std::to_string(this->canali[prog].status);
+			snprintf(converted,32,"%ld",this->canali[prog].status);toPrint=std::string(converted);
+			crateData+= "\"status\":"+toPrint;
 			for (int i=0; i < this->toShow.size(); i++)
 			{
 				double *pt;
 				pt=(double*)getExtraPointer(this->toShow[i],prog);
 				crateData+=",";
-				crateData+= "\""+this->toShow[i]+"\":"+std::to_string(*pt);
+				snprintf(converted,32,"%6.3f",*pt);toPrint=std::string(converted);
+				crateData+= "\""+this->toShow[i]+"\":"+toPrint;
 
 			}
 			crateData+="}";
@@ -169,7 +188,8 @@ int MultiPSSim::setChannelVoltage(int32_t slot,int32_t channel,double voltage) {
 	else
 	{
 		this->canali[chanNum].V0Set=voltage;
-		this->canali[chanNum].VMon=voltage;
+		if (this->voltageGenerator)
+			this->canali[chanNum].VMon=voltage;
 	}
 		
 	return 0;
@@ -181,7 +201,8 @@ int MultiPSSim::setChannelCurrent(int32_t slot,int32_t channel,double current) {
 	else
 	{
 		this->canali[chanNum].I0Set=current;
-		//this->canali[chanNum].IMon=voltage;
+		if (!this->voltageGenerator)
+		  this->canali[chanNum].IMon=current;
 	}
 		
 	return 0;

@@ -67,6 +67,8 @@ namespace common {
 				std::vector<int16_t> channelsEachSlot;
 				std::vector<std::string> toShow;
 				std::vector<SimChannel> canali;
+				bool voltageGenerator;
+				double AdditiveNoise;
 				
 			};//end class
 		}//end namespace models

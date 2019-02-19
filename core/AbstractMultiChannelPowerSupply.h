@@ -34,6 +34,12 @@ namespace common {
 			virtual int setChannelParameter(int32_t slot,int32_t channel,std::string paramName,std::string paramValue)=0;
 			virtual int PowerOn(int32_t slot,int32_t channel,int32_t onState)=0;
 		};
+		
+		 enum MPSGeneratorBehaviour {
+			MPS_NOT_SPECIFIED     = 0,
+			MPS_CURRENT_GENERATOR = 0x1,
+			MPS_VOLTAGE_GENERATOR = 0x2
+		};
 	}
 #define UPMASK(bitmask,powerofTwo) \
 bitmask |= powerofTwo 
