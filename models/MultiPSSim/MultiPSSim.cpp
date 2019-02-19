@@ -73,8 +73,9 @@ MultiPSSim::MultiPSSim(const chaos::common::data::CDataWrapper &config) {
 		   nuovo.RDWn=1;
 		   nuovo.V0Set=0;
 		   nuovo.V1Set=0;
-		   nuovo.status=1; //Status POWER SUPPLY OFF on start
-		   nuovo.I0Set=0;
+		   nuovo.status= ::common::powersupply::POWER_SUPPLY_STATE_STANDBY; //Status POWER SUPPLY OFF on start
+		   nuovo.alarm=0;
+			 nuovo.I0Set=0;
 		   nuovo.I1Set=0;
 		   nuovo.SVMax=2.0;
 		   nuovo.IMon= (float) ch/4;
@@ -134,12 +135,7 @@ int MultiPSSim::UpdateHV(std::string& crateData) {
 				crateData+=",";
 			}
 			crateData+="{";
-			if (CHECKMASK(this->canali[prog].status,common::powersupply::POWER_SUPPLY_STATE_OFF))
-			{
-				crateData+= "\"VMon\":0,";
-				crateData+= "\"IMon\":0,";
-			}
-			else if (CHECKMASK(this->canali[prog].status,common::powersupply::POWER_SUPPLY_STATE_ON))
+			if (CHECKMASK(this->canali[prog].status,common::powersupply::POWER_SUPPLY_STATE_ON))
 			{// rand : RAND_MAX = noiseLevel : AdditiveNoise
 				
 			  double noiseLevel= (this->AdditiveNoise*std::rand())/ RAND_MAX;
@@ -149,6 +145,13 @@ int MultiPSSim::UpdateHV(std::string& crateData) {
 				snprintf(converted,32,"%6.3f",this->canali[prog].IMon + noiseLevel);toPrint=std::string(converted);
 				crateData+= "\"IMon\":"+toPrint +",";
 			}
+			else 
+			{
+				crateData+= "\"VMon\":0,";
+				crateData+= "\"IMon\":0,";
+			}
+			snprintf(converted,32,"%ld",this->canali[prog].alarm);toPrint=std::string(converted);
+			crateData+= "\"alarm\":"+toPrint+",";
 			snprintf(converted,32,"%ld",this->canali[prog].status);toPrint=std::string(converted);
 			crateData+= "\"status\":"+toPrint;
 			for (int i=0; i < this->toShow.size(); i++)
@@ -266,7 +269,7 @@ int MultiPSSim::PowerOn(int32_t slot,int32_t channel,int32_t onState) {
 		{
 			if (!onState)
 			{
-				UPMASK(this->canali[chanNum].status,common::powersupply::POWER_SUPPLY_STATE_OFF);
+				UPMASK(this->canali[chanNum].status,common::powersupply::POWER_SUPPLY_STATE_STANDBY);
 				DOWNMASK(this->canali[chanNum].status,common::powersupply::POWER_SUPPLY_STATE_ON);
 			}
 				

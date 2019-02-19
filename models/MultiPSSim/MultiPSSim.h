@@ -58,10 +58,11 @@ namespace common {
 					double VMon;
 					double IMon;
 					long status;
+					long alarm;
 					int PDWn;
 					int POn;
 					int Pw;
-					public: SimChannel() {}; 
+					public: SimChannel() {};
 				};
 				std::vector<int16_t> listOfSlots;
 				std::vector<int16_t> channelsEachSlot;
