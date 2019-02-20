@@ -83,6 +83,7 @@ MultiPSSim::MultiPSSim(const chaos::common::data::CDataWrapper &config) {
 		   this->canali.push_back(nuovo);
 			 this->voltageGenerator=true;
 			 this->AdditiveNoise=0;
+			 this->MainPowerOn=true;
 	   }
    }
     //DPRINT("received init parameter %s ",config.getJSONString().c_str());
@@ -385,6 +386,43 @@ int MultiPSSim::PowerOn(int32_t slot,int32_t channel,int32_t onState) {
 	
 	return 0;
 }
+int MultiPSSim::MainUnitPowerOn(int32_t on_state) {
+				if (on_state==0)
+				{
+					this->MainPowerOn=false;
+					this->PowerOn(-1,-1,0);
+				}
+				else
+				{
+					this->MainPowerOn=true;
+				}
+				
+        return 0;
+}
+int MultiPSSim::getMainStatus(int32_t& status, std::string& desc) {
+				status=0;
+				desc.clear();
+				if (this->MainPowerOn)
+				{
+					UPMASK(status,::common::powersupply::POWER_SUPPLY_STATE_ON);
+					desc+="Main Unit ON.";
+				}
+				else
+				{
+					UPMASK(status,::common::powersupply::POWER_SUPPLY_STATE_MAINUNIT_NOT_ON);
+					desc+="Main Unit OFF";
+				}
+        return 0;
+}
+int MultiPSSim::getMainAlarms(int64_t& alarms, std::string& desc ) {
+				alarms=0;
+				desc.clear();
+        return 0;
+}
+
+
+
+
 int MultiPSSim::getChanNum(int32_t slot, int32_t chan) {
 	int i;
 	int chanToRet=0;

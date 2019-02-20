@@ -40,6 +40,9 @@ namespace common {
 				int getChannelParametersDescription(std::string& outJSONString);
 				int setChannelParameter(int32_t slot,int32_t channel,std::string paramName,std::string paramValue);
 				int PowerOn(int32_t slot,int32_t channel,int32_t onState);
+				int MainUnitPowerOn(int32_t on_state);
+				int getMainStatus(int32_t& status, std::string& desc);
+				int getMainAlarms(int64_t& alarms, std::string& desc);
 				int getChanNum(int32_t slot, int32_t chan);
 				void* getExtraPointer(std::string name, int32_t progChannel);
 				private:
@@ -69,6 +72,7 @@ namespace common {
 				std::vector<std::string> toShow;
 				std::vector<SimChannel> canali;
 				bool voltageGenerator;
+				bool MainPowerOn;
 				double AdditiveNoise;
 				
 			};//end class

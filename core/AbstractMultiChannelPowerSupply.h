@@ -33,6 +33,9 @@ namespace common {
 			virtual int getChannelParametersDescription(std::string& outJSONString)=0;
 			virtual int setChannelParameter(int32_t slot,int32_t channel,std::string paramName,std::string paramValue)=0;
 			virtual int PowerOn(int32_t slot,int32_t channel,int32_t onState)=0;
+			virtual int MainUnitPowerOn(int32_t on_state)=0;
+			virtual int getMainStatus(int32_t& status, std::string& desc)=0;
+			virtual int getMainAlarms(int64_t& alarms, std::string& desc)=0;
 		};
 		
 		 enum MPSGeneratorBehaviour {
