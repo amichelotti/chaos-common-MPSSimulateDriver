@@ -19,20 +19,43 @@ limitations under the License.
 #include <common/debug/core/debug.h>
 #include <vector>
 #ifdef CHAOS
+#include <common/misc/driver/ConfigDriverMacro.h>
 #include <chaos/common/data/CDataWrapper.h>
 #endif
+#include <cstring>
+#include "HV/CAENHVWrapper.h"
 #include "CAEN2527.h"
+
+using namespace std;
 using namespace common::multichannelpowersupply;
 using namespace common::multichannelpowersupply::models;
 CAEN2527::CAEN2527(const std::string Parameters) {
 }
 #ifdef CHAOS
 CAEN2527::CAEN2527(const chaos::common::data::CDataWrapper &config) { 
+	GET_PARAMETER_TREE((&config), driver_param)
+	{
+		GET_PARAMETER(driver_param, IP, string, 1);
+		IPaddress.assign(IP);
+		GET_PARAMETER(driver_param, Name, string, 1);
+		CrateName.assign(Name);
+	}
 }
 #endif
 CAEN2527::~CAEN2527() {
 }
 int CAEN2527::UpdateHV(std::string& crateData) {
+	int ret= this->Login_HV_HET((char*)CrateName.c_str());
+	if (ret==0)
+	{
+		DPRINT("LOGGED ON");
+		ret=this->Logout_HV_HET((char*)CrateName.c_str());
+	}
+	else
+	{
+		DPRINT("LOGIN FAILED");
+	}
+	
 	return 0;
 }
 int CAEN2527::getSlotConfiguration(std::vector<int32_t>& slotNumberList,std::vector<int32_t>& channelsPerSlot) {
@@ -62,3 +85,45 @@ int CAEN2527::getMainStatus(int32_t& status,std::string& descr) {
 int CAEN2527::getMainAlarms(int64_t& alarms,std::string& descr) {
 	return 0;
 }
+
+int CAEN2527::Login_HV_HET(char name[])
+{
+  char arg[30], userName[20], passwd[30];
+  int link;
+  CAENHVRESULT ret;
+  int iret;
+
+  link = 0;
+  strcpy(userName,"admin");
+  strcpy(passwd,"admin");
+  strcpy(arg,this->IPaddress.c_str());
+  ret = CAENHVInitSystem(name, link, arg, userName, passwd);
+  if( ret == CAENHV_OK )
+  {
+    /* printf("CAENHVInitSystem: Connection opened (num. %d)\n\n", ret); */
+    iret = 0;
+  }
+  else
+  {
+     printf("\nCAENHVInitSystem: %s (num. %d)\n\n", CAENHVGetError(name), ret);
+     iret = -1;
+  }
+  return(iret);
+}
+
+int CAEN2527::Logout_HV_HET(char name[]) {
+  CAENHVRESULT ret;
+  int iret;
+
+  ret = CAENHVDeinitSystem(name);
+  if( ret == CAENHV_OK ) {
+    /* printf("CAENHVDeinitSystem: Connection closed (num. %d)\n\n", ret); */
+    iret = 0;
+  } else {
+    /* printf("CAENHVDeinitSystem: %s (num. %d)\n\n", CAENHVGetError(name), ret); */
+    iret = 1;
+  }
+
+  return(iret);
+}
+

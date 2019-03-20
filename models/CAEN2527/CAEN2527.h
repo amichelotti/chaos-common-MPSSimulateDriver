@@ -43,6 +43,12 @@ namespace common {
 				int MainUnitPowerOn(int32_t on_state);
 				int getMainStatus(int32_t& status,std::string& descr);
 				int getMainAlarms(int64_t& alarms,std::string& descr);
+
+				private:
+				int Login_HV_HET(char name[]);
+				int Logout_HV_HET(char name[]);
+				std::string IPaddress;
+				std::string CrateName;
 			};//end class
 		}//end namespace models
 	}//end namespace multichannelpowersupply
