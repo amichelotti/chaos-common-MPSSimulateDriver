@@ -45,6 +45,10 @@ CAEN2527::CAEN2527(const chaos::common::data::CDataWrapper &config) {
 CAEN2527::~CAEN2527() {
 }
 int CAEN2527::UpdateHV(std::string& crateData) {
+
+
+	DPRINT ("Trying connection on SysName %s at IP %s",CrateName.c_str(),IPaddress.c_str());
+  sleep(5);
 	int ret= this->Login_HV_HET((char*)CrateName.c_str());
 	if (ret==0)
 	{
