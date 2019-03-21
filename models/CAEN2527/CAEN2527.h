@@ -45,10 +45,15 @@ namespace common {
 				int getMainAlarms(int64_t& alarms,std::string& descr);
 
 				private:
-				int Login_HV_HET(char name[]);
-				int Logout_HV_HET(char name[]);
+				int Login_HV_HET();
+				int Logout_HV_HET();
+				int Slot_Present_HV_HET(unsigned short Slot);
 				std::string IPaddress;
 				std::string CrateName;
+				std::vector<int32_t> listOfSlots;
+				std::vector<int32_t> channelsEachSlot;
+				std::vector<std::string> toShow;
+				int SysType;
 				int handle;
 			};//end class
 		}//end namespace models
