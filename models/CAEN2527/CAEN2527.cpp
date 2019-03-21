@@ -98,7 +98,7 @@ int CAEN2527::UpdateHV(std::string& crateData) {
   CAENHVRESULT cret;
   unsigned short chList;
   float fParVarList;
-  long lParVarList;
+  char lParVarList[32];
 	if (ret==0)
 	{
 		
@@ -116,7 +116,12 @@ int CAEN2527::UpdateHV(std::string& crateData) {
         CAENHV_GetChParam(this->handle,slot,"IMon",ch,&chList,&fParVarList);
         crateData+= "\"IMon\":"+to_string(fParVarList) +",";
         CAENHV_GetChParam(this->handle,slot,"Status",ch,&chList,&lParVarList);
-        crateData+= "\"status\":"+to_string(lParVarList) +",";
+        int statusRead;
+        if (!strncmp(lParVarList,"Off",3))
+          statusRead=::common::powersupply::POWER_SUPPLY_STATE_STANDBY;
+        else
+          statusRead=::common::powersupply::POWER_SUPPLY_STATE_ON;
+        crateData+= "\"status\":"+to_string(statusRead) +",";
 
         crateData+= "\"alarm\":0";
 

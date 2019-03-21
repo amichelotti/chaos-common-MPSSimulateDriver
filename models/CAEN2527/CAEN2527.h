@@ -20,6 +20,7 @@ limitations under the License.
 #define __MultiChannelPowerSupply__CAEN2527__
 
 #include <common/MultiChannelPowerSupply/core/AbstractMultiChannelPowerSupply.h>
+#include <common/powersupply/core/AbstractPowerSupply.h>
 #ifdef CHAOS
 #include <chaos/common/data/CDataWrapper.h>
 #endif
