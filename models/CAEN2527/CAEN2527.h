@@ -49,6 +49,7 @@ namespace common {
 				int Logout_HV_HET(char name[]);
 				std::string IPaddress;
 				std::string CrateName;
+				int handle;
 			};//end class
 		}//end namespace models
 	}//end namespace multichannelpowersupply

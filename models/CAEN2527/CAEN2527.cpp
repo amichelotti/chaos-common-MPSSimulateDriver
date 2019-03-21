@@ -23,7 +23,7 @@ limitations under the License.
 #include <chaos/common/data/CDataWrapper.h>
 #endif
 #include <cstring>
-#include "HV/CAENHVWrapper.h"
+#include "CAENHVWrapper.h"
 #include "CAEN2527.h"
 
 using namespace std;
@@ -96,12 +96,13 @@ int CAEN2527::Login_HV_HET(char name[])
   int link;
   CAENHVRESULT ret;
   int iret;
+  ;
 
   link = 0;
   strcpy(userName,"admin");
   strcpy(passwd,"admin");
   strcpy(arg,this->IPaddress.c_str());
-  ret = CAENHVInitSystem(name, link, arg, userName, passwd);
+  ret = CAENHV_InitSystem((CAENHV_SYSTEM_TYPE_t)0, link, arg, userName, passwd,&handle);
   if( ret == CAENHV_OK )
   {
     /* printf("CAENHVInitSystem: Connection opened (num. %d)\n\n", ret); */
@@ -109,7 +110,7 @@ int CAEN2527::Login_HV_HET(char name[])
   }
   else
   {
-     printf("\nCAENHVInitSystem: %s (num. %d)\n\n", CAENHVGetError(name), ret);
+     printf("\nCAENHVInitSystem: %s (num. %d)\n\n", CAENHV_GetError(handle), ret);
      iret = -1;
   }
   return(iret);
@@ -119,7 +120,7 @@ int CAEN2527::Logout_HV_HET(char name[]) {
   CAENHVRESULT ret;
   int iret;
 
-  ret = CAENHVDeinitSystem(name);
+  ret = CAENHV_DeinitSystem(this->handle);
   if( ret == CAENHV_OK ) {
     /* printf("CAENHVDeinitSystem: Connection closed (num. %d)\n\n", ret); */
     iret = 0;
