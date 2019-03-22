@@ -48,7 +48,10 @@ namespace common {
 				private:
 				int Login_HV_HET();
 				int Logout_HV_HET();
-				int Slot_Present_HV_HET(unsigned short Slot);
+				int getNumChannelSlot(int slotNum);
+				std::string trim_right_copy(const std::string& s,  const std::string& delimiters=" \f\n\r\t\v");
+				std::string trim_left_copy(const std::string &s, const std::string& delimiters=" \f\n\r\t\v");
+				std::string trim_copy(const std::string &s, const std::string& delimiters=" \f\n\r\t\v");
 				std::string IPaddress;
 				std::string CrateName;
 				std::vector<int32_t> listOfSlots;
