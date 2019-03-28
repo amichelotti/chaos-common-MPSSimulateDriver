@@ -18,6 +18,7 @@ limitations under the License.
 */
 #include <common/debug/core/debug.h>
 #include <vector>
+
 //#define CHAOS
 #ifdef CHAOS
 #include <common/misc/driver/ConfigDriverMacro.h>
@@ -40,14 +41,14 @@ inline std::string CAEN2527::trim_left_copy(const std::string &s,
 								   {
 									   return s.substr(s.find_first_not_of(delimiters));
 								   }
-std::string CAEN2527::trim_copy(const std::string &s, const std::string& delimiters)
-{
+std::string CAEN2527::trim_copy(const std::string &s, const std::string& delimiters) {
 	return this->trim_left_copy(this->trim_right_copy(s,delimiters),delimiters);
 }
 CAEN2527::CAEN2527(const std::string Parameters) {
 }
 #ifdef CHAOS
 CAEN2527::CAEN2527(const chaos::common::data::CDataWrapper &config) { 
+  this->driverConnected=false;
 	GET_PARAMETER_TREE((&config), driver_param)
 	{
 		GET_PARAMETER(driver_param, IP, string, 1);
@@ -94,6 +95,7 @@ CAEN2527::CAEN2527(const chaos::common::data::CDataWrapper &config) {
 	
   if (ret==0)
 	{
+    this->driverConnected=true;
     int slotCount=0;
     CAENHV_GetCrateMap(this->handle,&slotNum,&chanList,ModelList,DescrList,&SerNumList,FmwRelMinList,FmwRelMaxList);
    
@@ -106,8 +108,13 @@ CAEN2527::CAEN2527(const chaos::common::data::CDataWrapper &config) {
          this->channelsEachSlot.push_back(chanList[j]);
       }
     }
-		ret=this->Logout_HV_HET();
+		
 	}
+  else
+  {
+    this->driverConnected=false;
+  }
+  
   free(chanList);
   free(SerNumList);
   free(ModelList);
@@ -117,23 +124,22 @@ CAEN2527::CAEN2527(const chaos::common::data::CDataWrapper &config) {
 }
 #endif
 CAEN2527::~CAEN2527() {
+  int ret=this->Logout_HV_HET();
 }
 int CAEN2527::UpdateHV(std::string& crateData) {
+  sleep(1);
 
-
-	//DPRINT ("Trying connection on SysName %s at IP %s",CrateName.c_str(),IPaddress.c_str());
-  sleep(5);
-  
   bool first=true;
   CAENHVRESULT *cret;
-  unsigned short *chList;
-  float *fgParVarList;
-  long *lParVarList;
-  char** cParVarList;
+  unsigned short chList[128];
+  float fgParVarList[128];
+  uint32_t lParVarList[128];
+
   CAENHVRESULT hret=CAENHV_OK;
-  int ret= this->Login_HV_HET();
-	if (ret==0)
+
+	if (this->driverConnected==true)
 	{
+    std::string complementaryString[this->toShow.size()];
 		crateData="[";
     for (int sl_it=0; sl_it < this->listOfSlots.size(); sl_it++)
     {
@@ -141,81 +147,117 @@ int CAEN2527::UpdateHV(std::string& crateData) {
       std::vector<float> VMonRead;
       std::vector<float> IMonRead;
       std::vector<int32_t> statusRead;
+      std::vector<int32_t> alarmRead;
       int maxChanThisSlot=this->channelsEachSlot[sl_it];
-      chList=(unsigned short*)malloc(sizeof(unsigned short)*maxChanThisSlot);
-      fgParVarList=(float*)malloc(sizeof(float)*maxChanThisSlot);
-      lParVarList=(long*)malloc(sizeof(long)*maxChanThisSlot);
-      cParVarList=(char**)malloc(sizeof(char)*maxChanThisSlot*16);
       for (int ch=0; ch < maxChanThisSlot;ch++)
       {
         chList[ch]=ch;
       }
-       
-        hret=CAENHV_GetChParam(this->handle,slot,"VMon",maxChanThisSlot,chList,fgParVarList);
-        for (int ch=0; ch < maxChanThisSlot;ch++)
+      hret=CAENHV_GetChParam(this->handle,slot,"VMon",maxChanThisSlot,chList,fgParVarList);
+      for (int ch=0; ch < maxChanThisSlot;ch++)
+      {
+        VMonRead.push_back(fgParVarList[ch]);
+      }
+      //
+      hret=CAENHV_GetChParam(this->handle,slot,"IMon",maxChanThisSlot,chList,fgParVarList);
+      for (int ch=0; ch < maxChanThisSlot;ch++)
+      {
+        float voltValue=fgParVarList[ch]/1000000;
+        IMonRead.push_back(voltValue);
+      }
+      //hret=CAENHV_GetChParam(this->handle,slot,"Pw",maxChanThisSlot,chList,lParVarList);
+      for (int ch=0; ch < maxChanThisSlot;ch++)
+      {
+        unsigned short lista[24];
+        uint32_t readValue[24];
+        lista[0]=ch;
+        hret=CAENHV_GetChParam(this->handle,slot,"Status",1,lista,readValue);
+        if (CHECKBIT(readValue[0],0))
         {
-          VMonRead.push_back(fgParVarList[ch]);
+          statusRead.push_back(::common::powersupply::POWER_SUPPLY_STATE_ON);
+          //DPRINT("ALEDEBUG slot %d chan %d ON %s ",slot,ch,testo);
         }
-        //
-        hret=CAENHV_GetChParam(this->handle,slot,"IMon",maxChanThisSlot,chList,fgParVarList);
-        for (int ch=0; ch < maxChanThisSlot;ch++)
+        else 
         {
-          float voltValue=fgParVarList[ch]/1000000;
-          IMonRead.push_back(voltValue);
+          statusRead.push_back(::common::powersupply::POWER_SUPPLY_STATE_STANDBY);
+          //DPRINT("ALEDEBUG slot %d chan %d OFF %s",slot,ch,testo);
         }
-        //unsigned long tipo;
-        //CAENHV_GetChParamProp(this->handle,slot,0,"Pw","Type",&tipo);
-        char testo[64];
-        for (int ch=0; ch < maxChanThisSlot;ch++)
-        {
-          unsigned short lista[24];
-          long readValue[24];
-          int32_t tmp;
-          lista[0]=ch;
-          hret=CAENHV_GetChParam(this->handle,slot,"Pw",1,lista,readValue);
-          sprintf(testo,"%x",readValue[0]);
-          sscanf(testo,"%d",&tmp);
-          if (tmp==1)
+        alarmRead.push_back(this->EncodeAlarms(readValue[0]));
+
+      }
+      if (this->toShow.size() > 0)
+      {
+          float FvalList[128];
+          for (int i=0; i < this->toShow.size(); i++)
           {
-            statusRead.push_back(::common::powersupply::POWER_SUPPLY_STATE_ON);
-            //DPRINT("ALEDEBUG slot %d chan %d ON %s ",slot,ch,testo);
+
+              uint32_t tipo;
+              complementaryString[i]="";
+              hret = CAENHV_GetChParamProp(handle, slot, chList[0], this->toShow[i].c_str(), "Type", &tipo);
+              if (hret == CAENHV_OK)
+              {
+                  //DPRINT("ALEDEBUG tipo of %s is %lu",this->toShow[i].c_str(),tipo);
+                  if( tipo == PARAM_TYPE_NUMERIC )
+                  {
+                    hret = CAENHV_GetChParam(handle, slot, this->toShow[i].c_str(), maxChanThisSlot, chList, FvalList);
+                    if (hret == CAENHV_OK)
+                    {
+                      char tmp[16];
+                      std::string tmpStr;
+                      for (int ch=0; ch < maxChanThisSlot;ch++)
+                      {
+                          sprintf(tmp,"%.3f",FvalList[ch]);
+                          tmpStr=tmp;
+                          //DPRINT("ALEDEBUG read %s as float value %f adding %s",this->toShow[i].c_str(),FvalList[ch],tmpStr.c_str());
+                          complementaryString[i]+=tmpStr+" ";
+                      }
+                    }
+                  }
+                  else
+                  {
+                    DPRINT("ALEDEBUG is not numeric (%d)",tipo);
+                    for (int ch=0; ch < maxChanThisSlot;ch++)
+                    {
+                      unsigned short lista[24];
+                      uint32_t readValue[24];
+                      lista[0]=ch;
+                      hret=CAENHV_GetChParam(this->handle,slot,this->toShow[i].c_str(),1,lista,readValue);
+                      //DPRINT("ALEDEBUG read %s as long value %d",this->toShow[i].c_str(),tmp);
+                      complementaryString[i]+=to_string(readValue[0])+" ";
+                    }
+                  }
+
+              }
+              //DPRINT("ALEDEBUG complementary string is %s",complementaryString[i].c_str());
           }
-          else if (tmp==0)
-          {
-            statusRead.push_back(::common::powersupply::POWER_SUPPLY_STATE_STANDBY);
-            //DPRINT("ALEDEBUG slot %d chan %d OFF %s",slot,ch,testo);
-          }
-          else
-          {
-            statusRead.push_back(::common::powersupply::POWER_SUPPLY_STATE_UKN);
-            //DPRINT("ALEDEBUG slot %d chan %d UNKNOWN %s %d",slot,ch,testo,readValue[0]);
-          }
-        }
-        for (int ch=0; ch < maxChanThisSlot;ch++)
+      }
+      for (int ch=0; ch < maxChanThisSlot;ch++)
+      {
+        if (first) {first=false;}
+        else 	{ crateData+=","; }
+        crateData+="{";
+        crateData+= "\"VMon\":"+to_string(VMonRead[ch]) +",";
+        crateData+= "\"IMon\":"+to_string(IMonRead[ch]) +",";
+        crateData+= "\"status\":"+to_string(statusRead[ch]) +",";
+        //crateData+= "\"status\":0,";
+        crateData+= "\"alarm\":0";
+        for (int i=0; i < this->toShow.size(); i++)
         {
-          if (first) {first=false;}
-			    else 	{ crateData+=","; }
-          crateData+="{";
-          crateData+= "\"VMon\":"+to_string(VMonRead[ch]) +",";
-          crateData+= "\"IMon\":"+to_string(IMonRead[ch]) +",";
-          crateData+= "\"status\":"+to_string(statusRead[ch]) +",";
-          //crateData+= "\"status\":0,";
-          crateData+= "\"alarm\":0";
-   		    crateData+="}";
-          //DPRINT("slot %d ch %d",slot,ch);
+          crateData+=",";
+          std::vector<std::string> tokens= this->split(complementaryString[i],' ');
+          crateData+="\""+this->toShow[i]+"\":"+tokens[ch];
+          
         }
-        free(chList);
-        free(fgParVarList);
-        free(lParVarList);
-        free(cParVarList);
+        crateData+="}";
+      }
     }
     crateData+="]";
     //DPRINT("ALEDEBUG %s",crateData.c_str());
-		ret=this->Logout_HV_HET();
+	
 	}
 	else
 	{
-		DPRINT("LOGIN FAILED");
+		DPRINT("DRIVER CONNECTION PROBLEM");
     return -2;
 	}
 	
@@ -228,10 +270,35 @@ int CAEN2527::getSlotConfiguration(std::vector<int32_t>& slotNumberList,std::vec
 	return 0;
 }
 int CAEN2527::setChannelVoltage(int32_t slot,int32_t channel,double voltage) {
-	return 0;
+   if (this->driverConnected)
+  {
+    uint32_t chList[24];
+    float   fparVal[24];
+    uint32_t readValue[24];
+    CAENHVRESULT hret=CAENHV_OK;
+    chList[0]=channel;
+    fparVal[0]=(float)voltage;
+    hret = CAENHV_SetChParam(this->handle,slot,"V0Set",1,(const unsigned short*)chList,fparVal);
+
+    sleep(1);
+    CAENHV_GetChParam(this->handle,slot,"Status",1,(const unsigned short*)chList,readValue);
+    DPRINT("ALEDEBUG channel status chan %d slot %d is %d",channel,slot,readValue[0]);
+
+
+
+    if (hret==CAENHV_OK)
+      return 0;
+    else
+    {
+      return (int)hret;
+    }
+    
+  }
+	return -2;
+	
 }
 int CAEN2527::setChannelCurrent(int32_t slot,int32_t channel,double current) {
-	return 0;
+ return 0;
 }
 int CAEN2527::getChannelParametersDescription(std::string& outJSONString) {
   outJSONString.clear();
@@ -251,8 +318,8 @@ int CAEN2527::setChannelParameter(int32_t slot,int32_t channel,std::string param
 	return 0;
 }
 int CAEN2527::PowerOn(int32_t slot,int32_t channel,int32_t onState) {
-  int ret= this->Login_HV_HET();
-	if (ret==0)
+  
+	if (this->driverConnected)
 	{
     CAENHVRESULT hret=CAENHV_OK;
     int loop=1;
@@ -267,7 +334,7 @@ int CAEN2527::PowerOn(int32_t slot,int32_t channel,int32_t onState) {
         slotNum= (slot==-1) ?this->listOfSlots[i] : slot;
         int chanloop=1;
         uint32_t chList[32];
-        long lparVal[32];
+        uint32_t lparVal[32];
         if (channel == -1)
         {
           if (slot==-1)
@@ -299,23 +366,55 @@ int CAEN2527::PowerOn(int32_t slot,int32_t channel,int32_t onState) {
         //int slot=
       }
       //
-    	ret=this->Logout_HV_HET();
+    
       if (hret != CAENHV_OK )
       {
         return -1;
       }
+      else
+      {
+        return 0;
+      }
+      
   }
-	return ret;
+  else
+	  return -2;
 }
 int CAEN2527::MainUnitPowerOn(int32_t on_state) {
+  CAENHVRESULT ret;
+  
+  unsigned short lista[24];
+  uint32_t readValue[24];
+  lista[0]=0;
+  ret=CAENHV_GetChParam(this->handle,0,"Status",1,lista,readValue);
+  DPRINT("ALEDEBUG channel status chan 0 slot 0 is %d",readValue[0]);
 	return 0;
 }
 int CAEN2527::getMainStatus(int32_t& status,std::string& descr) {
-  status=0;
+  if (this->driverConnected)
+  {
+    status=::common::powersupply::POWER_SUPPLY_STATE_ON;
+    descr="Main Unit ON";
+  }
+  else
+  {
+    status=::common::powersupply::POWER_SUPPLY_STATE_UKN;
+    descr="Main Unit state Unknown";
+  }
+  
 	return 0;
 }
 int CAEN2527::getMainAlarms(int64_t& alarms,std::string& descr) {
-  alarms=0;
+  if (this->driverConnected)
+  {
+    alarms=0;
+  }
+  else
+  {
+    alarms=::common::powersupply::POWER_SUPPLY_COMMUNICATION_FAILURE;
+    descr="Main unit unreachable";
+  }
+  
 	return 0;
 }
 
@@ -331,7 +430,7 @@ int CAEN2527::Login_HV_HET()
   strcpy(userName,"admin");
   strcpy(passwd,"admin");
   strcpy(arg,this->IPaddress.c_str());
-  ret = CAENHV_InitSystem((CAENHV_SYSTEM_TYPE_t)0, link, arg, userName, passwd,&handle);
+  ret = CAENHV_InitSystem((CAENHV_SYSTEM_TYPE_t)1, link, arg, userName, passwd,&handle);
   if( ret == CAENHV_OK )
   {
     /* printf("CAENHVInitSystem: Connection opened (num. %d)\n\n", ret); */
@@ -368,4 +467,56 @@ int CAEN2527::getNumChannelSlot(int sl)
         return this->channelsEachSlot[i];
   }
   return 0;
+}
+
+std::vector<std::string> CAEN2527::split(std::string toSplit,char sep)
+{
+  std::vector<std::string> retVec;
+  //std::string toSplit=this->trim_copy(toSplitNT);
+  size_t  start = 0, end = 0;
+
+    while ( end != std::string::npos)
+    {
+        end = toSplit.find( sep, start);
+
+        // If at end, use length=maxLength.  Else use length=end-start.
+        retVec.push_back( toSplit.substr( start,
+                       (end == std::string::npos) ? std::string::npos : end - start));
+
+        // If at end, use start=maxSize.  Else use start=end+delimiter.
+        start = (   ( end > (std::string::npos - 1) )
+                  ?  std::string::npos  :  end + 1);
+    }
+    return retVec;
+}
+int32_t CAEN2527::EncodeAlarms(uint32_t hwmask)
+{
+  int32_t retmask=0;
+  if (CHECKBIT(hwmask,3))
+  {
+    RAISEBIT(retmask,::common::powersupply::POWER_SUPPLY_OVER_CURRENT);
+  }
+  if ( (CHECKBIT(hwmask,4)) || (CHECKBIT(hwmask,13)) )
+  {
+    RAISEBIT(retmask,::common::powersupply::POWER_SUPPLY_OVER_VOLTAGE);
+  }
+  if (CHECKBIT(hwmask,15))
+  {
+    RAISEBIT(retmask,::common::powersupply::POWER_SUPPLY_EVENT_OVER_TEMP);
+  }
+  if (
+      (CHECKBIT(hwmask,5)) ||
+      (CHECKBIT(hwmask,6)) ||
+      (CHECKBIT(hwmask,9)) ||
+      (CHECKBIT(hwmask,10)) ||
+      (CHECKBIT(hwmask,14))
+
+  )
+  {
+    RAISEBIT(retmask,::common::powersupply::POWER_SUPPLY_ALARM_UNDEF);
+  }
+
+
+
+  return retmask;
 }

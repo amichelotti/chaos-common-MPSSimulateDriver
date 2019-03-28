@@ -52,13 +52,17 @@ namespace common {
 				std::string trim_right_copy(const std::string& s,  const std::string& delimiters=" \f\n\r\t\v");
 				std::string trim_left_copy(const std::string &s, const std::string& delimiters=" \f\n\r\t\v");
 				std::string trim_copy(const std::string &s, const std::string& delimiters=" \f\n\r\t\v");
+				std::vector<std::string> split(std::string toSplit,char sep);
 				std::string IPaddress;
 				std::string CrateName;
 				std::vector<int32_t> listOfSlots;
 				std::vector<int32_t> channelsEachSlot;
 				std::vector<std::string> toShow;
+				
+				int32_t EncodeAlarms(uint32_t hwread);
 				int SysType;
 				int handle;
+				bool driverConnected;
 			};//end class
 		}//end namespace models
 	}//end namespace multichannelpowersupply
