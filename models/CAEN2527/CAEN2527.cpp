@@ -279,13 +279,28 @@ int CAEN2527::setChannelVoltage(int32_t slot,int32_t channel,double voltage) {
     chList[0]=channel;
     fparVal[0]=(float)voltage;
     hret = CAENHV_SetChParam(this->handle,slot,"V0Set",1,(const unsigned short*)chList,fparVal);
+    if (hret==CAENHV_OK)
+      return 0;
+    else
+    {
+      return (int)hret;
+    }
+  }
+	return -2;
 
-    sleep(1);
-    CAENHV_GetChParam(this->handle,slot,"Status",1,(const unsigned short*)chList,readValue);
-    DPRINT("ALEDEBUG channel status chan %d slot %d is %d",channel,slot,readValue[0]);
-
-
-
+}
+int CAEN2527::setChannelCurrent(int32_t slot,int32_t channel,double current) {
+  if (this->driverConnected)
+  {
+    uint32_t chList[24];
+    float   fparVal[24];
+    uint32_t readValue[24];
+    float uCurrent;
+    CAENHVRESULT hret=CAENHV_OK;
+    chList[0]=channel;
+    uCurrent=current *(1000000);//current arrives in A. Machine needs uA;
+    fparVal[0]=uCurrent;;
+    hret = CAENHV_SetChParam(this->handle,slot,"I0Set",1,(const unsigned short*)chList,fparVal);
     if (hret==CAENHV_OK)
       return 0;
     else
@@ -295,10 +310,6 @@ int CAEN2527::setChannelVoltage(int32_t slot,int32_t channel,double voltage) {
     
   }
 	return -2;
-	
-}
-int CAEN2527::setChannelCurrent(int32_t slot,int32_t channel,double current) {
- return 0;
 }
 int CAEN2527::getChannelParametersDescription(std::string& outJSONString) {
   outJSONString.clear();
@@ -315,6 +326,38 @@ int CAEN2527::getChannelParametersDescription(std::string& outJSONString) {
 	return 0;
 }
 int CAEN2527::setChannelParameter(int32_t slot,int32_t channel,std::string paramName,std::string paramValue) {
+  uint32_t tipo;
+  uint16_t chList[16];
+
+  chList[0]=channel;
+  CAENHVRESULT hret = CAENHV_GetChParamProp(handle, slot, chList[0], paramName.c_str(), "Type", &tipo);
+  if (hret == CAENHV_OK)
+  {
+     if( tipo == PARAM_TYPE_NUMERIC )
+     {
+       float FvalList[16];
+       FvalList[0]=atof(paramValue.c_str());
+       hret = CAENHV_SetChParam(handle, slot, paramName.c_str(), 1, chList, FvalList);
+       if (hret != CAENHV_OK)
+       {
+         return (int32_t)hret;
+       }
+     }
+     else
+     {
+       uint32_t LvalList[16];
+       LvalList[0]=atoi(paramValue.c_str());
+       hret = CAENHV_SetChParam(handle, slot, paramName.c_str(), 1, chList, LvalList);
+       if (hret != CAENHV_OK)
+       {
+         return (int32_t)hret;
+       }
+     }
+  }
+  else
+  {
+    return (int32_t)hret;
+  }
 	return 0;
 }
 int CAEN2527::PowerOn(int32_t slot,int32_t channel,int32_t onState) {
@@ -494,15 +537,15 @@ int32_t CAEN2527::EncodeAlarms(uint32_t hwmask)
   int32_t retmask=0;
   if (CHECKBIT(hwmask,3))
   {
-    RAISEBIT(retmask,::common::powersupply::POWER_SUPPLY_OVER_CURRENT);
+    UPMASK(retmask,::common::powersupply::POWER_SUPPLY_OVER_CURRENT);
   }
   if ( (CHECKBIT(hwmask,4)) || (CHECKBIT(hwmask,13)) )
   {
-    RAISEBIT(retmask,::common::powersupply::POWER_SUPPLY_OVER_VOLTAGE);
+    UPMASK(retmask,::common::powersupply::POWER_SUPPLY_OVER_VOLTAGE);
   }
   if (CHECKBIT(hwmask,15))
   {
-    RAISEBIT(retmask,::common::powersupply::POWER_SUPPLY_EVENT_OVER_TEMP);
+    UPMASK(retmask,::common::powersupply::POWER_SUPPLY_EVENT_OVER_TEMP);
   }
   if (
       (CHECKBIT(hwmask,5)) ||
@@ -513,7 +556,7 @@ int32_t CAEN2527::EncodeAlarms(uint32_t hwmask)
 
   )
   {
-    RAISEBIT(retmask,::common::powersupply::POWER_SUPPLY_ALARM_UNDEF);
+    UPMASK(retmask,::common::powersupply::POWER_SUPPLY_ALARM_UNDEF);
   }
 
 
