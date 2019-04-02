@@ -1,8 +1,8 @@
-# Install script for directory: /home/aduffizi/chaos_bundle/common/MultiChannelPowerSupply/models/MultiPSSim
+# Install script for directory: /home/michelo/chaos_bundle/common/MultiChannelPowerSupply/models/MultiPSSim
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
-  set(CMAKE_INSTALL_PREFIX "/home/aduffizi/chaos_bundle/chaosframework/config/../chaos-distrib-x86_64-Linux")
+  set(CMAKE_INSTALL_PREFIX "/home/michelo/chaos_bundle/chaosframework/config/../chaos-distrib-x86_64-Linux")
 endif()
 string(REGEX REPLACE "/$" "" CMAKE_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}")
 
@@ -38,10 +38,10 @@ if(NOT DEFINED CMAKE_CROSSCOMPILING)
 endif()
 
 if("x${CMAKE_INSTALL_COMPONENT}x" STREQUAL "xUnspecifiedx" OR NOT CMAKE_INSTALL_COMPONENT)
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/include/common/MultiChannelPowerSupply/models/MultiPSSim" TYPE FILE FILES "/home/aduffizi/chaos_bundle/common/MultiChannelPowerSupply/models/MultiPSSim/MultiPSSim.h")
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/include/common/MultiChannelPowerSupply/models/MultiPSSim" TYPE FILE FILES "/home/michelo/chaos_bundle/common/MultiChannelPowerSupply/models/MultiPSSim/MultiPSSim.h")
 endif()
 
 if("x${CMAKE_INSTALL_COMPONENT}x" STREQUAL "xUnspecifiedx" OR NOT CMAKE_INSTALL_COMPONENT)
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib" TYPE STATIC_LIBRARY FILES "/home/aduffizi/chaos_bundle/build-x86_64-Linux/libcommon_multichannelpowersupply_MultiPSSim.a")
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib" TYPE STATIC_LIBRARY FILES "/home/michelo/chaos_bundle/build-x86_64-Linux/libcommon_multichannelpowersupply_MultiPSSim.a")
 endif()
 
