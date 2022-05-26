@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.0)
 project(common_multichannelpowersupply)
 find_package(Boost MODULE REQUIRED REQUIRED COMPONENTS program_options system)
 FILE(GLOB core_src core/*.h)
