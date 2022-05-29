@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 3.0)
 add_subdirectory(MultiPSSim)
 IF (CAEN2527)
   add_subdirectory(CAEN2527)

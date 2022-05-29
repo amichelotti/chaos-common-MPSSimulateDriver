@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.0)
 project(common_multichannelpowersupply_MultiPSSim)
 find_package(chaos)
 ADD_DEFINITIONS(-DDEBUG -fpermissive)
